@@ -15,7 +15,7 @@ fake = Faker()
 if __name__ == "__main__":
     fake = Faker()
 
-# Create seed data
+    # Create seed data
 with app.app_context():
     print("Starting seed...")
 

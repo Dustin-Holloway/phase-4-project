@@ -18,10 +18,11 @@ class User(db.Model, SerializerMixin):
     image = db.Column(db.String)
     unit = db.Column(db.Integer)
 
-    listings = db.relationship("Listing", backref="user")
-    user_listings = db.relationship("UserListing", back_populates="author")
+    listings = db.relationship("Listing", back_populates="user")
+    comments = db.relationship("Comment", back_populates="user")
+    favorites = db.relationship("Favorite", back_populates="user")
 
-    comments = association_proxy("user_listings", "comments")
+    favorited_listings = association_proxy("favorites", "listing")
 
     @hybrid_property
     def password_hash(self):
@@ -44,9 +45,10 @@ class Listing(db.Model, SerializerMixin):
     image = db.Column(db.String)
     title = db.Column(db.String)
     content = db.Column(db.String)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
-    comments = db.relationship("Comment", backref="listing")
+    user_id = db.Column(db.Integer, ForeignKey("users.id"))
+    user = db.relationship("User", back_populates="listings")
+    comments = db.relationship("Comment", back_populates="listing")
 
 
 class Comment(db.Model, SerializerMixin):
@@ -55,19 +57,23 @@ class Comment(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     comment_type = db.Column(db.String)
     content = db.Column(db.String, nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
 
-    user_listings = db.relationship("UserListing", back_populates="comments")
+    listing_id = db.Column(db.Integer, ForeignKey("listings.id"))
+    user_id = db.Column(db.Integer, ForeignKey("users.id"))
 
-    serialize_rules = ("-user_listings", "listing_id")
+    user = db.relationship("User", back_populates="comments")
+    listing = db.relationship("Listing", back_populates="comments")
+    favorite = db.relationship("Favorite", back_populates="comment")
+
+    # serialize_rules = ("-user_listings", "listing_id")
 
 
-class UserListing(db.Model, SerializerMixin):
-    __tablename__ = "user_listings"
+class Favorite(db.Model, SerializerMixin):
+    __tablename__ = "favorites"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    comment_id = db.Column(db.Integer, db.ForeignKey("comments.id"))
+    user_id = db.Column(db.Integer, ForeignKey("users.id"))
+    comment_id = db.Column(db.Integer, ForeignKey("comments.id"))
 
-    author = db.relationship("User", back_populates="user_listings")
-    comments = db.relationship("Comment", back_populates="user_listings")
+    user = db.relationship("User", back_populates="favorites")
+    comment = db.relationship("Comment", back_populates="favorite")
