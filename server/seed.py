@@ -56,7 +56,7 @@ with app.app_context():
     listings = Listing.query.all()
     for _ in range(20):
         comment = Comment(
-            type=fake.word(),
+            comment_type=fake.word(),
             content=fake.sentence(),
             listing=fake.random_element(listings),
         )

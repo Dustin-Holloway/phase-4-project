@@ -4,17 +4,17 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_serializer import SerializerMixin
 
-from config import db, bcrypt, metadata
+from config import db, bcrypt
 
 
 class User(db.Model, SerializerMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String, nullable=False)
+    username = db.Column(db.String, unique=True)
     password = db.Column(db.String)
-    _password_hash = db.Column(db.String, nullable=False)
-    name = db.Column(db.String, nullable=False)
+    _password_hash = db.Column(db.String)
+    name = db.Column(db.String)
     image = db.Column(db.String)
     unit = db.Column(db.Integer)
 
@@ -23,7 +23,7 @@ class User(db.Model, SerializerMixin):
 
     comments = association_proxy("user_listings", "comments")
 
-    @property
+    @hybrid_property
     def password_hash(self):
         return self._password_hash
 
@@ -53,11 +53,13 @@ class Comment(db.Model, SerializerMixin):
     __tablename__ = "comments"
 
     id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String)
+    comment_type = db.Column(db.String)
     content = db.Column(db.String, nullable=False)
     listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
 
     user_listings = db.relationship("UserListing", back_populates="comments")
+
+    serialize_rules = ("-user_listings", "listing_id")
 
 
 class UserListing(db.Model, SerializerMixin):
