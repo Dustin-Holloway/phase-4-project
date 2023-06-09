@@ -12,7 +12,6 @@ class User(db.Model, SerializerMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True)
-    password = db.Column(db.String)
     _password_hash = db.Column(db.String)
     name = db.Column(db.String)
     image = db.Column(db.String)
@@ -24,12 +23,16 @@ class User(db.Model, SerializerMixin):
 
     favorited_listings = association_proxy("favorites", "listing")
 
-    @hybrid_property
-    def password_hash(self):
-        return self._password_hash
+    # @hybrid_property
+    # def password_hash(self):
+    #     return self._password_hash
 
-    @password_hash.setter
-    def password_hash(self, password):
+    @property
+    def password(self):
+        raise AttributeError("Password is not readable")
+
+    @password.setter
+    def password(self, password):
         self._password_hash = bcrypt.generate_password_hash(password.encode("utf-8"))
 
     def authenticate(self, password):
@@ -65,7 +68,7 @@ class Comment(db.Model, SerializerMixin):
     listing = db.relationship("Listing", back_populates="comments")
     favorite = db.relationship("Favorite", back_populates="comment")
 
-    # serialize_rules = ("-user_listings", "listing_id")
+    serialize_rules = "id"
 
 
 class Favorite(db.Model, SerializerMixin):

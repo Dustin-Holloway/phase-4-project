@@ -28,7 +28,7 @@ with app.app_context():
     for _ in range(5):
         user = User(
             username=fake.user_name(),
-            password_hash=fake.password(),
+            password=fake.password(),
             name=fake.name(),
             image=fake.image_url(),
             unit=fake.random_int(min=1, max=10),
