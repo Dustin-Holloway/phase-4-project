@@ -15,7 +15,7 @@ class UserById(Resource):
         user = db.session.query(User).filter_by(id=id).first()
 
         if user:
-            return make_response(jsonify(user.to_dict(only=("username", "name"))), 201)
+            return make_response(jsonify(user.to_dict()), 201)
 
         return make_response(jsonify({"error": "user not found!"}), 404)
 
@@ -30,7 +30,7 @@ class UserById(Resource):
             #     setattr(updated_user, attr, request.json[attr])
             db.session.add(updated_user)
             db.session.commit()
-            return make_response(jsonify(updated_user.to_dict(only=("username",))), 200)
+            return make_response(jsonify(updated_user.to_dict()), 200)
 
         return make_response({"Error": "User not found"}, 404)
 
@@ -40,6 +40,7 @@ class Login(Resource):
         try:
             json_data = request.get_json()
             username = json_data.get("username")
+            password = json_data.get("password")
 
             if not username:
                 response = make_response({"error": "Username is required."}, 400)
@@ -47,7 +48,7 @@ class Login(Resource):
 
             current_user = User.query.filter_by(username=username).first()
 
-            if current_user:
+            if current_user and current_user.authenticate(password):
                 session["username"] = current_user.username
                 response = make_response(
                     jsonify(
@@ -142,10 +143,19 @@ class UserComments(Resource):
         request_json = request.get_json()
 
         try:
+            username = session.get("username")
+            user = User.query.filter_by(username=username).first()
+
+            if not user:
+                return make_response(
+                    jsonify({"error": "User not found, please login"}), 401
+                )
+
             new_comment = Comment(
                 content=request_json.get("content"),
                 comment_type=request_json.get("comment_type"),
                 listing_id=request_json.get("listing_id"),
+                user=user,
             )
 
             db.session.add(new_comment)
@@ -207,16 +217,16 @@ class ListingsById(Resource):
 
         if new_listing:
             return make_response(
-                jsonify(new_listing.to_dict(only=("id",))),
+                jsonify(new_listing.to_dict()),
                 200,
             )
         return make_response({"error": "comment not found"}, 404)
 
     def delete(self, id):
-        new_listing = Listing.query.get(id)
+        listing = Listing.query.get(id)
 
-        if new_listing:
-            db.session.delete(new_listing)
+        if listing:
+            db.session.delete(listing)
             db.session.commit()
             return make_response({}, 204)
 
@@ -258,16 +268,32 @@ class Listings(Resource):
         request_json = request.get_json()
 
         try:
+            user_id = request_json.get("user_id")
+            user = User.query.get(user_id)
+
+            if not user:
+                return make_response(
+                    jsonify({"error": "User not found, please login"}), 401
+                )
+
             new_listing = Listing(
                 image=request_json.get("image"),
                 title=request_json.get("title"),
                 content=request_json.get("content"),
+                user=user,
             )
 
             db.session.add(new_listing)
             db.session.commit()
 
-            return make_response(jsonify(new_listing.to_dict(only=("id",))), 201)
+            return make_response(
+                jsonify(
+                    new_listing.to_dict(
+                        only=("image", "title", "user", "id", "content")
+                    )
+                ),
+                201,
+            )
 
         except Exception:
             return make_response(jsonify({}), 400)

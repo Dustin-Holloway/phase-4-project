@@ -23,9 +23,11 @@ class User(db.Model, SerializerMixin):
 
     favorited_listings = association_proxy("favorites", "listing")
 
-    # @hybrid_property
-    # def password_hash(self):
-    #     return self._password_hash
+    serialize_rules = (
+        "-listings.user",
+        "-comments.user",
+        "-favorites.user",
+    )
 
     @property
     def password(self):
@@ -53,6 +55,11 @@ class Listing(db.Model, SerializerMixin):
     user = db.relationship("User", back_populates="listings")
     comments = db.relationship("Comment", back_populates="listing")
 
+    serialize_rules = (
+        "-user",
+        "-comments",
+    )
+
 
 class Comment(db.Model, SerializerMixin):
     __tablename__ = "comments"
@@ -68,7 +75,7 @@ class Comment(db.Model, SerializerMixin):
     listing = db.relationship("Listing", back_populates="comments")
     favorite = db.relationship("Favorite", back_populates="comment")
 
-    serialize_rules = "id"
+    serialize_rules = ("-user", "-listings")
 
 
 class Favorite(db.Model, SerializerMixin):
